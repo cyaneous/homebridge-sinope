@@ -12,11 +12,12 @@ This [Homebridge](https://homebridge.io/) plugin provides a platform for [Sinop√
 
 ## Supported Devices
 
-TH Series Thermostats
-DM Series Dimmers
-SW Series Switches
-SP Series Outlet
-RM Series Load Controllers
+- TH Series Thermostats
+- DM Series Dimmers
+- SW Series Switches
+- SP Series Outlet
+- RM Series Load Controllers
+- VA Series (Sedna) Valves
 
 ## Installation
 
