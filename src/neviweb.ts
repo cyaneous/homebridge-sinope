@@ -68,7 +68,7 @@ export class NeviwebApi {
   async fetchValve(id: number): Promise<SinopeValveState> {
     return this.restClient.request<SinopeValveState>({
       url: this.config.url + '/device/' + id +
-        '/attribute?attributes=motorPosition',
+        '/attribute?attributes=motorPosition,motorTargetPosition,batteryStatus',
       method: 'GET',
     });
   }

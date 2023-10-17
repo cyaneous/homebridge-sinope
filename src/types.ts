@@ -26,6 +26,8 @@ export interface SinopeDimmerState {
 
 export interface SinopeValveState {
   motorPosition: number;
+  motorTargetPosition: number;
+  batteryStatus: string;
 }
 
 export interface SinopeThermostatStateRequest {

@@ -30,6 +30,7 @@ class StateDimmer {
 
 class StateValve {
   active = 0;
+  inUse = 0;
   lock = new AsyncLock({ timeout: 5000 });
   validUntil = 0;
 }
@@ -757,9 +758,8 @@ export class SinopeValveAccessory {
 
   async handleInUseGet(callback: CharacteristicGetCallback) {
     this.platform.log.debug('Triggered GET InUse');
-    const inUse = this.state.active === this.platform.Characteristic.Active.ACTIVE ?
-      this.platform.Characteristic.InUse.IN_USE : this.platform.Characteristic.InUse.NOT_IN_USE;
-    callback(null, inUse);
+    const state = await this.getState();
+    callback(null, state.inUse);
   }
 
   private async getState(): Promise<StateValve> {
@@ -782,10 +782,16 @@ export class SinopeValveAccessory {
 
       this.state.validUntil = this.currentEpoch() + 1;
 
-      if (deviceState.motorPosition > 0) {
+      if (deviceState.motorTargetPosition > 0) {
         this.state.active = this.platform.Characteristic.Active.ACTIVE;
       } else {
         this.state.active = this.platform.Characteristic.Active.INACTIVE;
+      }
+
+      if (deviceState.motorPosition > 0) {
+        this.state.inUse = this.platform.Characteristic.InUse.IN_USE;
+      } else {
+        this.state.inUse = this.platform.Characteristic.InUse.NOT_IN_USE;
       }
 
       this.service.updateCharacteristic(
@@ -793,12 +799,9 @@ export class SinopeValveAccessory {
         this.state.active,
       );
 
-      const inUse = this.state.active === this.platform.Characteristic.Active.ACTIVE ? 
-        this.platform.Characteristic.InUse.IN_USE : this.platform.Characteristic.InUse.NOT_IN_USE;
-
       this.service.updateCharacteristic(
         this.platform.Characteristic.InUse,
-        inUse,
+        this.state.inUse,
       );
     } catch(error) {
       this.platform.log.error('could not fetch update for device %s from Neviweb API', this.device.name);
