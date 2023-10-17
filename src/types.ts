@@ -24,6 +24,10 @@ export interface SinopeDimmerState {
   intensity: number;
 }
 
+export interface SinopeValveState {
+  motorPosition: number;
+}
+
 export interface SinopeThermostatStateRequest {
   roomSetpoint?: number;
   setpointMode?: string;
@@ -36,6 +40,10 @@ export interface SinopeSwitchStateRequest {
 export interface SinopeDimmerStateRequest {
   onOff?: string;
   intensity?: number;
+}
+
+export interface SinopeValveStateRequest {
+  motorTargetPosition?: number;
 }
 
 export interface RootTemperature {

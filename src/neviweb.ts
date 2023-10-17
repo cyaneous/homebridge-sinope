@@ -2,7 +2,7 @@ import { Logger } from 'homebridge';
 import { NeviwebRestClient } from './rest-client';
 import { SinopePlatformConfig } from './config';
 import { SinopeDevice, SinopeThermostatState, SinopeThermostatStateRequest, SinopeSwitchState, SinopeSwitchStateRequest, 
-  SinopeDimmerState, SinopeDimmerStateRequest } from './types';
+  SinopeDimmerState, SinopeValveState, SinopeDimmerStateRequest, SinopeValveStateRequest } from './types';
 import { Queue } from 'async-await-queue';
 
 const myPriority = -1;
@@ -65,6 +65,14 @@ export class NeviwebApi {
     });
   }
 
+  async fetchValve(id: number) {
+    return this.restClient.request<SinopeValveState>({
+      url: this.config.url + '/device/' + id +
+        '/attribute?attributes=motorPosition',
+      method: 'GET',
+    });
+  }
+
   async updateSwitch(id: number, data: SinopeSwitchStateRequest) {
     const me = Symbol();
     await this.myq.wait(me, myPriority);
@@ -81,6 +89,18 @@ export class NeviwebApi {
     const me = Symbol();
     await this.myq.wait(me, myPriority);
     const reqresult = this.restClient.request<SinopeDimmerState>({
+      url: this.config.url + '/device/' + id + '/attribute',
+      method: 'PUT',
+      data: data,
+    });
+    this.myq.end(me);
+    return reqresult;
+  }
+
+  async updateValve(id: number, data: SinopeValveStateRequest) {
+    const me = Symbol();
+    await this.myq.wait(me, myPriority);
+    const reqresult = this.restClient.request<SinopeValveState>({
       url: this.config.url + '/device/' + id + '/attribute',
       method: 'PUT',
       data: data,

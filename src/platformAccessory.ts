@@ -1,6 +1,6 @@
 import { Service, PlatformAccessory, CharacteristicValue, CharacteristicSetCallback, CharacteristicGetCallback } from 'homebridge';
 import { SinopeDevice, SinopeThermostatState, SinopeThermostatStateRequest, SinopeSwitchState, 
-  SinopeSwitchStateRequest, SinopeDimmerState, SinopeDimmerStateRequest } from './types';
+  SinopeSwitchStateRequest, SinopeDimmerState, SinopeDimmerStateRequest, SinopeValveState, SinopeValveStateRequest } from './types';
 import { SinopePlatform } from './platform';
 import AsyncLock from 'async-lock';
 
@@ -24,6 +24,12 @@ class StateSwitch {
 class StateDimmer {
   onOff = 0;
   intensity = 0;
+  lock = new AsyncLock({ timeout: 5000 });
+  validUntil = 0;
+}
+
+class StateValve {
+  active = 0;
   lock = new AsyncLock({ timeout: 5000 });
   validUntil = 0;
 }
@@ -651,6 +657,144 @@ export class SinopeDimmerAccessory {
       );
 
 
+    } catch(error) {
+      this.platform.log.error('could not fetch update for device %s from Neviweb API', this.device.name);
+    }
+  }
+
+  private currentEpoch(): number {
+    return Math.ceil((new Date()).getTime() / 1000);
+  }
+
+  private isValid(timestamp: number): boolean {
+    return timestamp > this.currentEpoch() && timestamp !== undefined;
+  }
+}
+
+export class SinopeValveAccessory {
+  private service: Service;
+  private state = new StateValve();
+
+  constructor(
+    private readonly platform: SinopePlatform,
+    private readonly accessory: PlatformAccessory,
+    private readonly device: SinopeDevice,
+  ) {
+
+    // set accessory information
+    this.accessory.getService(this.platform.Service.AccessoryInformation)!
+      .setCharacteristic(this.platform.Characteristic.Manufacturer, this.device.vendor)
+      .setCharacteristic(this.platform.Characteristic.Model, this.device.sku)
+      .setCharacteristic(this.platform.Characteristic.SerialNumber, this.device.identifier);
+
+    // create a new Valve service
+    this.service = this.accessory.getService(this.platform.Service.Valve)
+    || this.accessory.addService(this.platform.Service.Valve);
+
+    // set the service name, this is what is displayed as the default name on the Home app
+    // in this example we are using the name we stored in the `accessory.context` in the `discoverDevices` method.
+    this.service.setCharacteristic(this.platform.Characteristic.Name, accessory.context.device.name);
+
+    // set the valve type
+    this.service.setCharacteristic(this.platform.Characteristic.ValveType, this.platform.Characteristic.ValveType.GENERIC_VALVE);
+
+    // create handlers for required characteristics
+    this.service.getCharacteristic(this.platform.Characteristic.Active)
+      .on('get', this.handleActiveGet.bind(this))
+      .on('set', this.handleActiveSet.bind(this));
+
+    this.service.getCharacteristic(this.platform.Characteristic.InUse)
+      .on('get', this.handleInUseGet.bind(this))
+
+    this.updateState();
+
+    setInterval(() => {
+      this.updateState();
+    }, 360 * 1000);
+  }
+
+  /**
+   * Handle requests to get the current value of the "On" characteristic
+   */
+  async handleActiveGet(callback: CharacteristicGetCallback) {
+    this.platform.log.debug('Triggered GET Active');
+    const state = await this.getState();
+    callback(null, state.active);
+  }
+
+  /**
+   * Handle requests to set the "On" characteristic
+   */
+  async handleActiveSet(value: CharacteristicValue, callback: CharacteristicSetCallback) {
+    this.platform.log.debug('Triggered SET Active:' + value);
+
+    let motorPosition = 0;
+
+    if (value === this.platform.Characteristic.Active.INACTIVE) {
+      motorPosition = 0;
+    } else if (value === this.platform.Characteristic.Active.ACTIVE) {
+      motorPosition = 100;
+    } else {
+      callback(null);
+      return;
+    }
+
+    const body: SinopeValveStateRequest = { motorTargetPosition: motorPosition };
+    try {
+      await this.platform.neviweb.updateValve(this.device.id, body);
+      this.platform.log.debug('updated device %s with Active %d', this.device.name, value);
+
+      // pull the new state in about the time it takes for the valve motor to change position
+      setTimeout(() => {
+        this.updateState();
+      }, 10000);
+    } catch(error) {
+      this.platform.log.error('could not update Active of device %s', this.device.name);
+    }
+
+    callback(null);
+  }
+
+  async handleInUseGet(callback: CharacteristicGetCallback) {
+    this.platform.log.debug('Triggered GET InUse');
+    callback(null, this.state.active === this.platform.Characteristic.Active.ACTIVE ? this.platform.Characteristic.InUse.IN_USE : this.platform.Characteristic.InUse.NOT_IN_USE);
+  }
+
+  private async getState(): Promise<StateValve> {
+    return await this.state.lock.acquire(STATE_KEY, async () => {
+      if (!this.isValid(this.state.validUntil)) {
+        this.platform.log.debug('updating state for accessory %s', this.device.name);
+        await this.updateState();
+      } else {
+        this.platform.log.debug('state is still valid for accessory %s', this.device.name);
+      }
+      return this.state;
+    });
+  }
+
+  private async updateState() {
+    let deviceState: SinopeValveState;
+    try {
+      deviceState = await this.platform.neviweb.fetchValve(this.device.id);
+      this.platform.log.debug('fetched update for device %s from Neviweb API: %s', this.device.name, JSON.stringify(deviceState));
+
+      this.state.validUntil = this.currentEpoch() + 1;
+
+      if (deviceState.motorPosition > 0) {
+        this.state.active = this.platform.Characteristic.Active.ACTIVE;
+      } else {
+        this.state.active = this.platform.Characteristic.Active.INACTIVE;
+      }
+
+      this.service.updateCharacteristic(
+        this.platform.Characteristic.Active,
+        this.state.active,
+      );
+
+      this.service.updateCharacteristic(
+        this.platform.Characteristic.InUse,
+        this.state.active === this.platform.Characteristic.Active.ACTIVE ? this.platform.Characteristic.InUse.IN_USE : this.platform.Characteristic.InUse.NOT_IN_USE,
+      );
     } catch(error) {
       this.platform.log.error('could not fetch update for device %s from Neviweb API', this.device.name);
     }
