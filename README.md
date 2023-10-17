@@ -23,7 +23,7 @@ This [Homebridge](https://homebridge.io/) plugin provides a platform for [Sinop√
 
 Install the plugin:
 ```
-sudo npm install -g homebridge-sinope-devices
+sudo npm install -g homebridge-sinope-sedna
 ```
 
 ## Configuration
