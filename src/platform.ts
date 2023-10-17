@@ -1,7 +1,8 @@
 import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service, Characteristic } from 'homebridge';
 
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
-import { SinopeThermostatAccessory, SinopeSwitchAccessory, SinopeOutletAccessory, SinopeDimmerAccessory, SinopeValveAccessory } from './platformAccessory';
+import { SinopeThermostatAccessory, SinopeSwitchAccessory, SinopeOutletAccessory, SinopeDimmerAccessory, 
+  SinopeValveAccessory } from './platformAccessory';
 // import { SinopeDevice } from './types';
 import { SinopePlatformConfig } from './config';
 import { NeviwebApi } from './neviweb';

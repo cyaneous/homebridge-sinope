@@ -704,7 +704,7 @@ export class SinopeValveAccessory {
       .on('set', this.handleActiveSet.bind(this));
 
     this.service.getCharacteristic(this.platform.Characteristic.InUse)
-      .on('get', this.handleInUseGet.bind(this))
+      .on('get', this.handleInUseGet.bind(this));
 
     this.updateState();
 
@@ -757,7 +757,9 @@ export class SinopeValveAccessory {
 
   async handleInUseGet(callback: CharacteristicGetCallback) {
     this.platform.log.debug('Triggered GET InUse');
-    callback(null, this.state.active === this.platform.Characteristic.Active.ACTIVE ? this.platform.Characteristic.InUse.IN_USE : this.platform.Characteristic.InUse.NOT_IN_USE);
+    const inUse = this.state.active === this.platform.Characteristic.Active.ACTIVE ?
+      this.platform.Characteristic.InUse.IN_USE : this.platform.Characteristic.InUse.NOT_IN_USE;
+    callback(null, inUse);
   }
 
   private async getState(): Promise<StateValve> {
@@ -791,9 +793,12 @@ export class SinopeValveAccessory {
         this.state.active,
       );
 
+      const inUse = this.state.active === this.platform.Characteristic.Active.ACTIVE ? 
+        this.platform.Characteristic.InUse.IN_USE : this.platform.Characteristic.InUse.NOT_IN_USE;
+
       this.service.updateCharacteristic(
         this.platform.Characteristic.InUse,
-        this.state.active === this.platform.Characteristic.Active.ACTIVE ? this.platform.Characteristic.InUse.IN_USE : this.platform.Characteristic.InUse.NOT_IN_USE,
+        inUse,
       );
     } catch(error) {
       this.platform.log.error('could not fetch update for device %s from Neviweb API', this.device.name);
