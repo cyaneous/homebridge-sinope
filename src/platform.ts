@@ -73,8 +73,12 @@ export class SinopePlatform implements DynamicPlatformPlugin {
     }
     this.log.info('successfully authenticated to the neviweb API');
 
-    const devices = await this.neviweb.fetchDevices();
-    this.log.debug('found the following devices: ' + JSON.stringify(devices));
+    try {
+      const devices = await this.neviweb.fetchDevices();
+      this.log.debug('found the following devices: ' + JSON.stringify(devices));
+    } catch (error) {
+      this.log.error('Failed to fetch devices: ' + error);
+    }
 
     // Gateways are now returned in the list of devices so we need to
     // filter these out.
