@@ -25,7 +25,7 @@ export class NeviwebApi {
     return this.restClient.logout();
   }
 
-  async fetchDevices() {
+  async fetchDevices(): Promise<SinopeDevice[]> {
     return this.restClient.request<SinopeDevice[]>({
       //url: this.config.url + '/devices' + '?location$id=' + this.config.locationid,
       url: this.config.url + '/devices' + ((this.config.locationid !== undefined) ? '?location$id=' + this.config.locationid : ''),
@@ -33,7 +33,7 @@ export class NeviwebApi {
     });
   }
 
-  async fetchThermostat(id: number) {
+  async fetchThermostat(id: number): Promise<SinopeThermostatState> {
     return this.restClient.request<SinopeThermostatState>({
       url: this.config.url + '/device/' + id +
         '/attribute?attributes=roomTemperature,outputPercentDisplay,setpointMode,alarmsActive0,roomSetpoint',
@@ -41,7 +41,7 @@ export class NeviwebApi {
     });
   }
 
-  async fetchSwitch(id: number) {
+  async fetchSwitch(id: number): Promise<SinopeSwitchState> {
     return this.restClient.request<SinopeSwitchState>({
       url: this.config.url + '/device/' + id +
         '/attribute?attributes=onOff',
@@ -49,7 +49,7 @@ export class NeviwebApi {
     });
   }
 
-  async fetchDimmer(id: number) {
+  async fetchDimmer(id: number): Promise<SinopeDimmerState> {
     return this.restClient.request<SinopeDimmerState>({
       url: this.config.url + '/device/' + id +
         '/attribute?attributes=onOff,intensity',
@@ -57,7 +57,7 @@ export class NeviwebApi {
     });
   }
 
-  async updateThermostat(id: number, data: SinopeThermostatStateRequest) {
+  async updateThermostat(id: number, data: SinopeThermostatStateRequest): Promise<SinopeThermostatState> {
     return this.restClient.request<SinopeThermostatState>({
       url: this.config.url + '/device/' + id + '/attribute',
       method: 'PUT',
@@ -65,7 +65,7 @@ export class NeviwebApi {
     });
   }
 
-  async fetchValve(id: number) {
+  async fetchValve(id: number): Promise<SinopeValveState> {
     return this.restClient.request<SinopeValveState>({
       url: this.config.url + '/device/' + id +
         '/attribute?attributes=motorPosition',
