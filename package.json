@@ -2,7 +2,7 @@
   "private": false,
   "displayName": "Homebridge Sinope",
   "name": "homebridge-sinope-sedna",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Unofficial API for Sinope thermostats",
   "license": "MIT",
   "repository": {
